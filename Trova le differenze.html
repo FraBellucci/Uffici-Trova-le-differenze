@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trova le Differenze – Categorie di Rischi</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#1a237e,#283593);min-height:100vh;display:flex;justify-content:center;align-items:center;overflow:hidden}
+.container{width:800px;height:550px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);display:flex;flex-direction:column}
+
+.header{background:linear-gradient(135deg,#0d47a1,#1565c0);color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.header h1{font-size:15px;font-weight:700}
+.header p{font-size:11px;opacity:.8;margin-top:1px}
+.btn-group{display:flex;gap:8px}
+button{padding:6px 12px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s}
+.btn-white{background:#fff;color:#0d47a1}.btn-white:hover{background:#e3f2fd}
+.btn-outline{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.4)}.btn-outline:hover{background:rgba(255,255,255,.25)}
+
+.status-bar{display:flex;align-items:center;gap:16px;padding:7px 14px;background:#f5f5f5;border-bottom:1px solid #e0e0e0;flex-shrink:0;font-size:12px;color:#555}
+.found-badge{background:#0d47a1;color:#fff;border-radius:20px;padding:2px 12px;font-size:12px;font-weight:700}
+.timer-val{font-weight:700;color:#0d47a1}
+.lives{display:flex;gap:4px}
+.life{font-size:14px}
+
+.game-area{flex:1;display:flex;gap:0;overflow:hidden;min-height:0;position:relative}
+.img-wrapper{flex:1;position:relative;overflow:hidden;cursor:crosshair}
+.img-wrapper img{width:100%;height:100%;object-fit:contain;display:block;user-select:none;pointer-events:none}
+.img-label{position:absolute;top:6px;left:50%;transform:translateX(-50%);background:rgba(13,71,161,.85);color:#fff;border-radius:4px;padding:2px 10px;font-size:10px;font-weight:700;letter-spacing:.5px;pointer-events:none}
+.divider{width:3px;background:#0d47a1;flex-shrink:0}
+
+/* Markers */
+.marker{position:absolute;width:36px;height:36px;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;transform:translate(-50%,-50%);pointer-events:none;animation:pop .3s ease}
+.marker.found-marker{background:rgba(46,125,50,.85);color:#fff;box-shadow:0 0 0 3px #2e7d32}
+.marker.wrong-marker{background:rgba(198,40,40,.85);color:#fff;box-shadow:0 0 0 3px #c62828;animation:shake .4s ease}
+@keyframes pop{0%{transform:translate(-50%,-50%) scale(0)}60%{transform:translate(-50%,-50%) scale(1.2)}100%{transform:translate(-50%,-50%) scale(1)}}
+@keyframes shake{0%,100%{transform:translate(-50%,-50%) translateX(0)}25%{transform:translate(-50%,-50%) translateX(-6px)}75%{transform:translate(-50%,-50%) translateX(6px)}}
+
+/* Mirror marker on left image */
+.mirror-marker{position:absolute;width:36px;height:36px;border-radius:50%;border:3px solid #2e7d32;background:rgba(46,125,50,.3);transform:translate(-50%,-50%);pointer-events:none;animation:pop .3s ease}
+
+/* Tooltip */
+.tooltip{position:fixed;background:#0d47a1;color:#fff;border-radius:8px;padding:10px 14px;font-size:12px;max-width:200px;line-height:1.5;z-index:100;pointer-events:none;box-shadow:0 4px 15px rgba(0,0,0,.3);display:none}
+.tooltip h4{font-size:13px;margin-bottom:4px}
+
+/* Win screen */
+.win-screen{position:absolute;inset:0;background:rgba(13,71,161,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;animation:fadeIn .4s ease;z-index:200}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.win-icon{font-size:56px}
+.win-screen h2{color:#fff;font-size:24px;font-weight:700}
+.win-screen p{color:#bbdefb;font-size:13px;text-align:center}
+.win-stats{display:flex;gap:12px;margin-top:4px}
+.win-stat{background:rgba(255,255,255,.15);border-radius:8px;padding:8px 16px;color:#fff;font-size:13px;font-weight:700;text-align:center}
+.win-stat span{display:block;font-size:10px;font-weight:400;opacity:.8;margin-bottom:2px}
+.btn-prim{background:#fff;color:#0d47a1;padding:10px 28px;font-size:14px;border-radius:8px;font-weight:700;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div>
+      <h1>🔍 Trova le Differenze – Categorie di Rischi</h1>
+      <p>Clicca sull'immagine di destra dove trovi una differenza rispetto all'originale</p>
+    </div>
+    <div class="btn-group">
+      <button class="btn-outline" onclick="resetGame()">🔄 Ricomincia</button>
+      <button class="btn-white" onclick="window.close()">✕ Esci</button>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span class="found-badge">Trovate: <span id="foundCount">0</span>/14</span>
+    <span>⏱ <span class="timer-val" id="timerVal">00:00</span></span>
+    <span>Errori: <span id="errCount" style="font-weight:700;color:#c62828">0</span></span>
+    <div class="lives" id="livesEl"></div>
+    <span style="margin-left:auto;font-size:11px;color:#888">Clicca sull'immagine di destra</span>
+  </div>
+
+  <div class="game-area" id="gameArea">
+    <!-- LEFT: original -->
+    <div class="img-wrapper" id="leftImg">
+      <img src="cat-r.jpg" alt="Officina originale" id="imgLeft">
+     
+    </div>
+    <div class="divider"></div>
+    <!-- RIGHT: modified -->
+    <div class="img-wrapper" id="rightImg">
+      <img src="cat-r-modificata.jpg" alt="Officina modificata" id="imgRight">
+      
+    </div>
+  </div>
+</div>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip">
+  <h4 id="ttTitle"></h4>
+  <div id="ttText"></div>
+</div>
+
+<script>
+// ============================================================
+// CONFIGURA QUI LE 6 DIFFERENZE
+// Le coordinate sono in percentuale (%) rispetto all'immagine
+// top: distanza dall'alto, left: distanza da sinistra
+// tolerance: raggio di click accettato (in % dell'immagine)
+// ============================================================
+const DIFFERENCES = [
+  {
+    id: 1,
+    top: 7,   // % dall'alto
+    left: 30,  // % da sinistra
+    tolerance: 8,
+    title: "nuvola",
+
+  },
+  {
+    id: 2,
+    top: 10,
+    left: 68,
+    tolerance: 8,
+    title: "lettera 'e'",
+    
+  },
+  {
+    id: 3,
+    top: 30,
+    left: 28,
+    tolerance: 8,
+    title: "cadute",
+    
+  },
+  {
+    id: 4,
+    top: 22,
+    left: 57,
+    tolerance: 8,
+    title: "Mano",
+   
+  },
+  {
+    id: 5,
+    top: 42,
+    left: 23,
+    tolerance: 8,
+    title: "vento",
+   
+  },
+  {
+    id: 6,
+    top: 58,
+    left: 20,
+    tolerance: 8,
+    title: "suono",
+   
+  },
+
+ {
+    id: 7,
+    top: 58,
+    left: 52,
+    tolerance: 8,
+    title: "bottiglietta",
+   
+  },
+  {
+    id: 8,
+    top: 58,
+    left: 75,
+    tolerance: 8,
+    title: "virus",
+   
+  },
+   {
+    id: 9,
+    top: 48,
+    left: 44,
+    tolerance: 8,
+    title: "provetta",
+   
+  },
+   {
+    id: 10,
+    top: 76,
+    left: 37,
+    tolerance: 8,
+    title: "orologio",
+   
+  },
+   {
+    id: 11,
+    top: 76,
+    left: 54,
+    tolerance: 8,
+    title: "callout",
+   
+  },
+   {
+    id: 12,
+    top: 78,
+    left: 82,
+    tolerance: 8,
+    title: "luna",
+   
+  },
+   {
+    id: 13,
+    top: 96,
+    left: 58,
+    tolerance: 8,
+    title: "Ergonomia",
+   
+  },
+   {
+    id: 14,
+    top: 87,
+    left: 77,
+    tolerance: 8,
+    title: "checkmark",
+   
+  },
+  
+
+];
+
+// ============================================================
+
+const MAX_LIVES = 5;
+let found = [];
+let errors = 0;
+let lives = MAX_LIVES;
+let timerInterval = null;
+let elapsed = 0;
+
+function initGame() {
+  found = [];
+  errors = 0;
+  lives = MAX_LIVES;
+  elapsed = 0;
+  document.getElementById('foundCount').textContent = '0';
+  document.getElementById('errCount').textContent = '0';
+  document.getElementById('timerVal').textContent = '00:00';
+  renderLives();
+  clearMarkers();
+  startTimer();
+
+  document.getElementById('rightImg').addEventListener('click', onRightClick);
+}
+
+function renderLives() {
+  const el = document.getElementById('livesEl');
+  el.innerHTML = '';
+  for (let i = 0; i < MAX_LIVES; i++) {
+    const s = document.createElement('span');
+    s.className = 'life';
+    s.textContent = i < lives ? '❤️' : '🖤';
+    el.appendChild(s);
+  }
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    elapsed++;
+    const m = Math.floor(elapsed / 60), s = elapsed % 60;
+    document.getElementById('timerVal').textContent =
+      String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  }, 1000);
+}
+
+function onRightClick(e) {
+  const wrapper = document.getElementById('rightImg');
+  const rect = wrapper.getBoundingClientRect();
+  const px = ((e.clientX - rect.left) / rect.width) * 100;
+  const py = ((e.clientY - rect.top) / rect.height) * 100;
+
+  // Check if click hits a difference
+  let hit = null;
+  for (const diff of DIFFERENCES) {
+    if (found.includes(diff.id)) continue;
+    const dx = px - diff.left;
+    const dy = py - diff.top;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist <= diff.tolerance) { hit = diff; break; }
+  }
+
+  if (hit) {
+    // Correct
+    found.push(hit.id);
+    document.getElementById('foundCount').textContent = found.length;
+    addMarker('right', hit.top, hit.left, found.length, true);
+    addMirrorMarker('left', hit.top, hit.left);
+    showTooltip(e.clientX, e.clientY, hit.title, hit.text);
+    setTimeout(hideTooltip, 2500);
+    if (found.length === DIFFERENCES.length) setTimeout(showWin, 600);
+  } else {
+    // Wrong
+    errors++;
+    lives = Math.max(0, lives - 1);
+    document.getElementById('errCount').textContent = errors;
+    renderLives();
+    addWrongMarker('right', py, px);
+    if (lives <= 0) setTimeout(showWin, 600);
+  }
+}
+
+function addMarker(side, top, left, num, correct) {
+  const wrapper = document.getElementById(side === 'right' ? 'rightImg' : 'leftImg');
+  const m = document.createElement('div');
+  m.className = 'marker found-marker';
+  m.style.top = top + '%';
+  m.style.left = left + '%';
+  m.textContent = num;
+  wrapper.appendChild(m);
+}
+
+function addMirrorMarker(side, top, left) {
+  const wrapper = document.getElementById(side === 'right' ? 'rightImg' : 'leftImg');
+  const m = document.createElement('div');
+  m.className = 'mirror-marker';
+  m.style.top = top + '%';
+  m.style.left = left + '%';
+  wrapper.appendChild(m);
+}
+
+function addWrongMarker(side, top, left) {
+  const wrapper = document.getElementById(side === 'right' ? 'rightImg' : 'leftImg');
+  const m = document.createElement('div');
+  m.className = 'marker wrong-marker';
+  m.style.top = top + '%';
+  m.style.left = left + '%';
+  m.textContent = '✗';
+  wrapper.appendChild(m);
+  setTimeout(() => m.remove(), 800);
+}
+
+function clearMarkers() {
+  document.querySelectorAll('.marker, .mirror-marker').forEach(m => m.remove());
+}
+
+function showTooltip(x, y, title, text) {
+  const tt = document.getElementById('tooltip');
+  document.getElementById('ttTitle').textContent = title;
+  document.getElementById('ttText').textContent = text;
+  tt.style.display = 'block';
+  // Position: avoid edges
+  const tw = 210, th = 80;
+  let tx = x + 14, ty = y - 20;
+  if (tx + tw > window.innerWidth) tx = x - tw - 14;
+  if (ty + th > window.innerHeight) ty = y - th - 10;
+  tt.style.left = tx + 'px';
+  tt.style.top  = ty + 'px';
+}
+
+function hideTooltip() {
+  document.getElementById('tooltip').style.display = 'none';
+}
+
+function showWin() {
+  clearInterval(timerInterval);
+  const m = Math.floor(elapsed/60), s = elapsed%60;
+  const timeStr = String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  const allFound = found.length === DIFFERENCES.length;
+
+  const win = document.createElement('div');
+  win.className = 'win-screen';
+  win.innerHTML = `
+    <div class="win-icon">${allFound ? '🎉' : '⏱️'}</div>
+    <h2>${allFound ? 'Tutte le differenze trovate!' : 'Gioco terminato!'}</h2>
+    <p>${allFound
+      ? 'Ottimo occhio! Hai individuato tutte le differenze tra le due immagini.'
+      : 'Hai esaurito i tentativi. Riprova per trovare tutte le differenze!'}</p>
+    <div class="win-stats">
+      <div class="win-stat"><span>Trovate</span>${found.length}/14</div>
+      <div class="win-stat"><span>Tempo</span>${timeStr}</div>
+      <div class="win-stat"><span>Errori</span>${errors}</div>
+    </div>
+    <button class="btn-prim" onclick="resetGame()">🔄 Gioca ancora</button>
+  `;
+  document.getElementById('gameArea').appendChild(win);
+}
+
+function resetGame() {
+  document.querySelector('.win-screen')?.remove();
+  document.getElementById('rightImg').removeEventListener('click', onRightClick);
+  clearInterval(timerInterval);
+  hideTooltip();
+  initGame();
+}
+
+// Start
+initGame();
+</script>
+</body>
+</html>
