@@ -69,7 +69,7 @@ button{padding:6px 12px;border:none;border-radius:6px;cursor:pointer;font-size:1
   </div>
 
   <div class="status-bar">
-    <span class="found-badge">Trovate: <span id="foundCount">0</span>/14</span>
+    <span class="found-badge">Trovate: <span id="foundCount">0</span>/7</span>
     <span>⏱ <span class="timer-val" id="timerVal">00:00</span></span>
     <span>Errori: <span id="errCount" style="font-weight:700;color:#c62828">0</span></span>
     <div class="lives" id="livesEl"></div>
@@ -99,7 +99,7 @@ button{padding:6px 12px;border:none;border-radius:6px;cursor:pointer;font-size:1
 
 <script>
 // ============================================================
-// CONFIGURA QUI LE 6 DIFFERENZE
+// CONFIGURA QUI LE 7 DIFFERENZE
 // Le coordinate sono in percentuale (%) rispetto all'immagine
 // top: distanza dall'alto, left: distanza da sinistra
 // tolerance: raggio di click accettato (in % dell'immagine)
@@ -314,7 +314,7 @@ function showWin() {
       ? 'Ottimo occhio! Hai individuato tutte le differenze tra le due immagini.'
       : 'Hai esaurito i tentativi. Riprova per trovare tutte le differenze!'}</p>
     <div class="win-stats">
-      <div class="win-stat"><span>Trovate</span>${found.length}/14</div>
+      <div class="win-stat"><span>Trovate</span>${found.length}/7</div>
       <div class="win-stat"><span>Tempo</span>${timeStr}</div>
       <div class="win-stat"><span>Errori</span>${errors}</div>
     </div>
